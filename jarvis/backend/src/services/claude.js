@@ -134,11 +134,23 @@ async function executeTool(name, input) {
 }
 
 async function* chat(userMessage) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    yield { type: 'error', error: 'ANTHROPIC_API_KEY is not set. Please configure it in your environment variables.' };
+    yield { type: 'done' };
+    return;
+  }
+
   conversationHistory.push({ role: 'user', content: userMessage });
 
   // Agentic tool loop with streaming
   while (true) {
-    const stream = await client.messages.stream({
+    // Accumulate content blocks from stream events — avoids relying on finalMessage()
+    const fullContent = [];
+    let stopReason = 'end_turn';
+
+    let currentBlock = null; // { type, text?, id?, name?, inputJson? }
+
+    const stream = client.messages.stream({
       model: 'claude-opus-4-6',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
@@ -146,40 +158,47 @@ async function* chat(userMessage) {
       messages: conversationHistory,
     });
 
-    let fullContent = [];
-    let currentTextBlock = '';
-    let currentBlockType = null;
-
     for await (const event of stream) {
       if (event.type === 'content_block_start') {
-        currentBlockType = event.content_block.type;
-        if (currentBlockType === 'text') currentTextBlock = '';
+        const cb = event.content_block;
+        if (cb.type === 'text') {
+          currentBlock = { type: 'text', text: '' };
+        } else if (cb.type === 'tool_use') {
+          currentBlock = { type: 'tool_use', id: cb.id, name: cb.name, inputJson: '' };
+        } else {
+          currentBlock = null;
+        }
+
       } else if (event.type === 'content_block_delta') {
+        if (!currentBlock) continue;
         if (event.delta.type === 'text_delta') {
-          currentTextBlock += event.delta.text;
+          currentBlock.text += event.delta.text;
           yield { type: 'text', delta: event.delta.text };
+        } else if (event.delta.type === 'input_json_delta') {
+          currentBlock.inputJson += event.delta.partial_json;
         }
+
       } else if (event.type === 'content_block_stop') {
-        if (currentBlockType === 'text' && currentTextBlock) {
-          fullContent.push({ type: 'text', text: currentTextBlock });
+        if (!currentBlock) continue;
+        if (currentBlock.type === 'text') {
+          fullContent.push({ type: 'text', text: currentBlock.text });
+        } else if (currentBlock.type === 'tool_use') {
+          let parsed = {};
+          try { parsed = JSON.parse(currentBlock.inputJson || '{}'); } catch (_) {}
+          fullContent.push({ type: 'tool_use', id: currentBlock.id, name: currentBlock.name, input: parsed });
         }
-        currentBlockType = null;
-        currentTextBlock = '';
+        currentBlock = null;
+
+      } else if (event.type === 'message_delta') {
+        if (event.delta?.stop_reason) stopReason = event.delta.stop_reason;
       }
     }
-
-    const finalMessage = await stream.finalMessage();
-
-    // Rebuild full content array from final message
-    fullContent = finalMessage.content;
 
     // Add assistant response to history
     conversationHistory.push({ role: 'assistant', content: fullContent });
 
-    // Check if we need to execute tools
-    if (finalMessage.stop_reason !== 'tool_use') {
-      break;
-    }
+    // If no tool calls, we're done
+    if (stopReason !== 'tool_use') break;
 
     // Execute all tool calls
     const toolResults = [];
@@ -196,7 +215,6 @@ async function* chat(userMessage) {
       }
     }
 
-    // Feed tool results back
     conversationHistory.push({ role: 'user', content: toolResults });
   }
 

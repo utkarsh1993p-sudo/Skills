@@ -165,11 +165,16 @@ app.get('*', (req, res) => {
 // ─── START ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
+  const apiKeyStatus = process.env.ANTHROPIC_API_KEY ? '✓ SET' : '✗ MISSING — responses will fail!';
   console.log(`
 ╔═══════════════════════════════════════════════╗
 ║  🤖 JARVIS Backend Online                     ║
 ║  Port: ${PORT}                                    ║
 ║  Model: claude-opus-4-6                       ║
+║  API Key: ${apiKeyStatus.padEnd(34)}║
 ╚═══════════════════════════════════════════════╝
   `);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('\n[FATAL] ANTHROPIC_API_KEY is not set. Set it in Render > Environment Variables.\n');
+  }
 });
