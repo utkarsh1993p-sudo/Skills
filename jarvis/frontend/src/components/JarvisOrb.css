@@ -1,0 +1,181 @@
+.orb-container {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --orb-color: var(--primary);
+  --orb-glow: var(--primary-glow);
+  --ring-speed: 8s;
+  --plasma-speed: 4s;
+}
+
+/* State variants */
+.orb-listening {
+  --orb-color: var(--success);
+  --orb-glow: rgba(0, 255, 136, 0.4);
+  --ring-speed: 4s;
+  --plasma-speed: 2s;
+}
+.orb-thinking {
+  --orb-color: var(--warn);
+  --orb-glow: rgba(255, 170, 0, 0.4);
+  --ring-speed: 2s;
+  --plasma-speed: 1s;
+}
+.orb-speaking {
+  --orb-color: var(--accent2);
+  --orb-glow: rgba(123, 47, 255, 0.4);
+  --ring-speed: 3s;
+  --plasma-speed: 1.5s;
+}
+
+/* Rings */
+.orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--orb-color);
+  animation: ring-rotate var(--ring-speed) linear infinite;
+  transition: border-color 0.5s;
+}
+.ring-1 {
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  border-style: dashed;
+}
+.ring-2 {
+  width: 80%;
+  height: 80%;
+  opacity: 0.2;
+  animation-direction: reverse;
+  animation-duration: calc(var(--ring-speed) * 1.3);
+  border-width: 2px;
+}
+.ring-3 {
+  width: 115%;
+  height: 115%;
+  opacity: 0.1;
+  animation-duration: calc(var(--ring-speed) * 2);
+}
+
+@keyframes ring-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* Core */
+.orb-core {
+  width: 65%;
+  height: 65%;
+  border-radius: 50%;
+  border: 1px solid var(--orb-color);
+  box-shadow:
+    0 0 20px var(--orb-glow),
+    0 0 40px rgba(0,0,0,0.5) inset,
+    0 0 60px var(--orb-glow) inset;
+  overflow: hidden;
+  transition: border-color 0.5s, box-shadow 0.5s;
+  animation: orb-breathe 3s ease-in-out infinite;
+}
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+.orb-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: radial-gradient(ellipse at 40% 35%, rgba(0,212,255,0.12), transparent 70%);
+  overflow: hidden;
+}
+
+.orb-plasma {
+  position: absolute;
+  inset: -20%;
+  border-radius: 40%;
+  background: radial-gradient(ellipse, var(--orb-color) 0%, transparent 70%);
+  opacity: 0.15;
+  animation: plasma-drift var(--plasma-speed) ease-in-out infinite;
+  transition: background 0.5s;
+}
+.orb-plasma-2 {
+  animation-delay: calc(var(--plasma-speed) * -0.5);
+  animation-direction: reverse;
+  opacity: 0.1;
+}
+
+@keyframes plasma-drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(10%, 10%) rotate(90deg); }
+  50% { transform: translate(0, 20%) rotate(180deg); }
+  75% { transform: translate(-10%, 10%) rotate(270deg); }
+}
+
+.orb-center-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--orb-color);
+  box-shadow: 0 0 12px var(--orb-color), 0 0 24px var(--orb-glow);
+  transition: background 0.5s, box-shadow 0.5s;
+  animation: center-pulse 2s ease-in-out infinite;
+}
+
+@keyframes center-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.6; }
+}
+
+/* Scan line */
+.orb-scan {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.orb-scan::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--orb-color), transparent);
+  top: 0;
+  opacity: 0.5;
+  animation: scan-line 3s linear infinite;
+}
+
+@keyframes scan-line {
+  from { top: 0; opacity: 0.6; }
+  to { top: 100%; opacity: 0; }
+}
+
+/* Particles */
+.orb-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--orb-color);
+  box-shadow: 0 0 4px var(--orb-color);
+  animation: particle-orbit var(--ring-speed) linear infinite;
+  animation-delay: calc(var(--i) * -1s);
+  transform-origin: 90px 90px;
+  transition: background 0.5s;
+  --angle: calc(var(--i) * 45deg);
+  transform: rotate(calc(var(--i) * 45deg)) translateY(-80px);
+}
+
+@keyframes particle-orbit {
+  from { transform: rotate(calc(var(--i) * 45deg)) translateY(-80px); opacity: 0.8; }
+  50% { opacity: 0.2; }
+  to { transform: rotate(calc(var(--i) * 45deg + 360deg)) translateY(-80px); opacity: 0.8; }
+}

@@ -1,0 +1,145 @@
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: rgba(0, 8, 20, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-title {
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--text-dim);
+}
+.chat-clear-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--error);
+  background: transparent;
+  border: 1px solid rgba(255, 51, 102, 0.3);
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chat-clear-btn:hover {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: var(--error);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Messages */
+.chat-msg {
+  padding: 10px 14px;
+  border-radius: 6px;
+  border-left: 2px solid;
+  animation: msg-in 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-msg-user {
+  border-color: var(--accent);
+  background: rgba(0, 102, 255, 0.06);
+  margin-left: 24px;
+}
+
+.chat-msg-assistant {
+  border-color: var(--primary);
+  background: rgba(0, 212, 255, 0.04);
+  margin-right: 24px;
+}
+
+.chat-msg-system {
+  border-color: var(--warn);
+  background: rgba(255, 170, 0, 0.05);
+  font-size: 0.8rem;
+  color: var(--warn);
+}
+
+.chat-msg-error {
+  border-color: var(--error) !important;
+  background: rgba(255, 51, 102, 0.06) !important;
+}
+
+.msg-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.msg-role {
+  font-family: var(--font-hud);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+}
+
+.chat-msg-user .msg-role { color: rgba(0, 102, 255, 0.7); }
+.chat-msg-assistant .msg-role { color: rgba(0, 212, 255, 0.7); }
+
+.msg-time {
+  font-size: 0.55rem;
+  color: rgba(200, 232, 255, 0.25);
+  letter-spacing: 0.1em;
+}
+
+.msg-body {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chat-msg-assistant .msg-body { color: rgba(200, 240, 255, 0.9); }
+
+.tool-calls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.tool-tag {
+  font-size: 0.55rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: var(--primary);
+  letter-spacing: 0.1em;
+}
+
+.cursor-blink {
+  animation: cursor-blink 0.7s step-end infinite;
+  color: var(--primary);
+  font-weight: bold;
+}
+@keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
