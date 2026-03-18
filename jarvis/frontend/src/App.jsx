@@ -31,7 +31,7 @@ export default function App() {
   const prevIsListeningRef = useRef(false);
   const transcriptRef = useRef('');
 
-  const { isListening, transcript, startListening, stopListening, speak, isSpeaking, supported, consumeTranscript } = useVoice();
+  const { isListening, transcript, startListening, stopListening, speak, isSpeaking, supported, ttsSupported, recognitionSupported, consumeTranscript } = useVoice();
 
   // Keep a ref copy of transcript to avoid stale closures
   useEffect(() => {
@@ -147,7 +147,7 @@ export default function App() {
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, streaming: false } : m
               ));
-              if (assistantContent && supported) {
+              if (assistantContent && ttsSupported) {
                 speak(assistantContent);
               }
             }
@@ -163,7 +163,7 @@ export default function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [input, isProcessing, speak, supported]);
+  }, [input, isProcessing, speak, ttsSupported]);
 
   // Hands-free: auto-send when recognition ends with a result
   useEffect(() => {
@@ -272,8 +272,8 @@ export default function App() {
           <button
             className={`voice-btn ${isListening ? 'active' : ''}`}
             onClick={handleVoiceToggle}
-            title={supported ? 'Toggle voice input' : 'Voice not supported in this browser'}
-            disabled={!supported}
+            title={recognitionSupported ? 'Toggle voice input' : 'Microphone not supported in this browser'}
+            disabled={!recognitionSupported}
           >
             <MicIcon active={isListening} />
           </button>
@@ -293,7 +293,7 @@ export default function App() {
             className={`hands-free-btn ${handsFreeMode ? 'active' : ''}`}
             onClick={() => setHandsFreeMode(v => !v)}
             title={handsFreeMode ? 'Disable hands-free mode' : 'Enable hands-free mode (auto-listen)'}
-            disabled={!supported}
+            disabled={!recognitionSupported}
           >
             <HandsFreeIcon active={handsFreeMode} />
           </button>

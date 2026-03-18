@@ -1,7 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const supported = !!SpeechRecognition && !!window.speechSynthesis;
+const recognitionSupported = !!SpeechRecognition;
+const ttsSupported = !!window.speechSynthesis;
+// legacy export: true only if both work (used for mic button disabled state)
+const supported = recognitionSupported && ttsSupported;
 
 export default function useVoice() {
   const [isListening, setIsListening] = useState(false);
@@ -9,18 +12,19 @@ export default function useVoice() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef(null);
   const voicesRef = useRef([]);
-  const synth = window.speechSynthesis;
+  const keepAliveRef = useRef(null);
 
   // Chrome loads voices asynchronously — pre-load them
   useEffect(() => {
-    const load = () => { voicesRef.current = synth.getVoices(); };
+    if (!ttsSupported) return;
+    const load = () => { voicesRef.current = window.speechSynthesis.getVoices(); };
     load();
-    synth.addEventListener('voiceschanged', load);
-    return () => synth.removeEventListener('voiceschanged', load);
+    window.speechSynthesis.addEventListener('voiceschanged', load);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
   }, []);
 
   const startListening = useCallback(() => {
-    if (!supported) return;
+    if (!recognitionSupported) return;
 
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
@@ -50,7 +54,12 @@ export default function useVoice() {
   }, []);
 
   const speak = useCallback((text) => {
-    if (!supported || !text) return;
+    if (!ttsSupported || !text) return;
+
+    const synth = window.speechSynthesis;
+
+    // Clear any existing keepalive
+    clearInterval(keepAliveRef.current);
 
     synth.cancel();
 
@@ -59,29 +68,51 @@ export default function useVoice() {
       .replace(/\n+/g, '. ')
       .slice(0, 600);
 
-    // Chrome bug: cancel() must settle before speak() works reliably
+    // Chrome needs a tick after cancel() before speak() works reliably
     setTimeout(() => {
+      // Chrome bug: synthesis can get stuck in paused state
+      if (synth.paused) synth.resume();
+
       const utterance = new SpeechSynthesisUtterance(clean);
       utterance.rate = 0.95;
       utterance.pitch = 0.9;
       utterance.volume = 1;
 
-      const voices = voicesRef.current;
+      // Use cached voices, fall back to live query
+      const voices = voicesRef.current.length ? voicesRef.current : synth.getVoices();
       const preferred = voices.find(v =>
         /google uk english male|daniel|alex|fred/i.test(v.name)
       ) || voices.find(v => v.lang === 'en-GB') || voices[0];
       if (preferred) utterance.voice = preferred;
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        // Chrome silently stops TTS after ~15s without this keepalive
+        keepAliveRef.current = setInterval(() => {
+          if (!synth.speaking) { clearInterval(keepAliveRef.current); return; }
+          synth.pause();
+          synth.resume();
+        }, 10000);
+      };
+
+      utterance.onend = () => {
+        clearInterval(keepAliveRef.current);
+        setIsSpeaking(false);
+      };
+
+      utterance.onerror = (e) => {
+        clearInterval(keepAliveRef.current);
+        setIsSpeaking(false);
+        console.warn('TTS error:', e.error);
+      };
 
       synth.speak(utterance);
-    }, 100);
+    }, 150);
   }, []);
 
   const cancelSpeech = useCallback(() => {
-    synth.cancel();
+    clearInterval(keepAliveRef.current);
+    window.speechSynthesis.cancel();
     setIsSpeaking(false);
   }, []);
 
@@ -90,7 +121,8 @@ export default function useVoice() {
   useEffect(() => {
     return () => {
       recognitionRef.current?.stop();
-      synth.cancel();
+      clearInterval(keepAliveRef.current);
+      window.speechSynthesis.cancel();
     };
   }, []);
 
@@ -103,6 +135,8 @@ export default function useVoice() {
     cancelSpeech,
     isSpeaking,
     supported,
+    ttsSupported,
+    recognitionSupported,
     consumeTranscript,
   };
 }
