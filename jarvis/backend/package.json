@@ -15,7 +15,9 @@
     "googleapis": "^144.0.0",
     "node-fetch": "^2.7.0",
     "qrcode": "^1.5.4",
-    "ws": "^8.18.0",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
     "whatsapp-web.js": "^1.26.0"
   },
   "devDependencies": {
