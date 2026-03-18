@@ -142,6 +142,7 @@ async function* chat(userMessage) {
 
   conversationHistory.push({ role: 'user', content: userMessage });
 
+  try {
   // Agentic tool loop with streaming
   while (true) {
     // Accumulate content blocks from stream events — avoids relying on finalMessage()
@@ -151,7 +152,7 @@ async function* chat(userMessage) {
     let currentBlock = null; // { type, text?, id?, name?, inputJson? }
 
     const stream = client.messages.stream({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools: TOOLS,
@@ -216,6 +217,19 @@ async function* chat(userMessage) {
     }
 
     conversationHistory.push({ role: 'user', content: toolResults });
+  }
+  } catch (err) {
+    // Parse Anthropic API error into a clean human-readable message
+    let msg = err?.message || 'Unknown error';
+    try {
+      // SDK error messages look like: "400 {\"type\":\"error\",\"error\":{...}}"
+      const jsonStart = msg.indexOf('{');
+      if (jsonStart !== -1) {
+        const parsed = JSON.parse(msg.slice(jsonStart));
+        msg = parsed?.error?.message || msg;
+      }
+    } catch (_) {}
+    yield { type: 'error', error: msg };
   }
 
   yield { type: 'done' };

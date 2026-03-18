@@ -144,8 +144,9 @@ export default function App() {
                   : m
               ));
             } else if (event.type === 'error') {
+              assistantContent = `I'm sorry, I encountered an issue: ${event.error}`;
               setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: `Error: ${event.error}`, streaming: false, error: true } : m
+                m.id === assistantId ? { ...m, content: assistantContent, streaming: false, error: true } : m
               ));
             } else if (event.type === 'done') {
               setMessages(prev => prev.map(m =>
