@@ -19,7 +19,11 @@ app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json());
 
 // ─── SERVE FRONTEND (production) ──────────────────────────────────────────────
-const STATIC_DIR = path.join(__dirname, '../../frontend/dist');
+// Docker layout: /app/src/server.js → /app/frontend/dist  (one level up)
+// Local layout:  jarvis/backend/src/server.js → jarvis/frontend/dist (two up)
+const STATIC_DIR = process.env.NODE_ENV === 'production'
+  ? path.join(__dirname, '../frontend/dist')
+  : path.join(__dirname, '../../frontend/dist');
 app.use(express.static(STATIC_DIR));
 
 // WebSocket — broadcast to all clients

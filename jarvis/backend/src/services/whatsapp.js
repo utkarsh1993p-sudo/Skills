@@ -1,5 +1,10 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode');
+let Client, LocalAuth, qrcode;
+try {
+  ({ Client, LocalAuth } = require('whatsapp-web.js'));
+  qrcode = require('qrcode');
+} catch (_) {
+  // whatsapp-web.js unavailable (missing Chromium/Puppeteer on this host)
+}
 
 let client = null;
 let qrDataUrl = null;
@@ -24,6 +29,11 @@ function getRecentMessages(contact = null, limit = 10) {
 }
 
 async function initWhatsApp(broadcast) {
+  if (!Client) {
+    status = 'error';
+    broadcast?.({ type: 'whatsapp_status', status: 'error', error: 'WhatsApp not available on this server (Chromium not installed).' });
+    return;
+  }
   if (client) return;
 
   status = 'connecting';

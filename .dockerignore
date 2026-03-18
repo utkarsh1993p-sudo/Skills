@@ -1,0 +1,8 @@
+jarvis/backend/node_modules
+jarvis/frontend/node_modules
+jarvis/frontend/dist
+jarvis/backend/data
+jarvis/.gitignore
+**/.env
+**/*.log
+.git
