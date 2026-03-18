@@ -13,8 +13,14 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
+const path = require('path');
+
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json());
+
+// ─── SERVE FRONTEND (production) ──────────────────────────────────────────────
+const STATIC_DIR = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(STATIC_DIR));
 
 // WebSocket — broadcast to all clients
 const broadcast = (data) => {
@@ -134,6 +140,22 @@ app.post('/api/whatsapp/send', async (req, res) => {
   if (!to || !message) return res.status(400).json({ error: 'to and message required' });
   const result = await whatsappService.sendMessage(to, message);
   res.json(result);
+});
+
+// ─── SPA CATCH-ALL (must be after API routes) ────────────────────────────────
+const fs = require('fs');
+app.get('*', (req, res) => {
+  const indexPath = path.join(STATIC_DIR, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(200).send(`
+      <html><body style="font-family:monospace;background:#030509;color:#00d4ff;padding:40px;text-align:center">
+        <h2>JARVIS Backend Online</h2>
+        <p style="color:#c8e8ff99">Frontend not built yet. Run: <code>cd frontend && npm run build</code></p>
+      </body></html>
+    `);
+  }
 });
 
 // ─── START ────────────────────────────────────────────────────────────────────

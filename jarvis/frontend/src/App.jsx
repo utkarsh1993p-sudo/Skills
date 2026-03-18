@@ -33,7 +33,8 @@ export default function App() {
   // WebSocket connection
   useEffect(() => {
     const connect = () => {
-      const ws = new WebSocket(`ws://localhost:3001`);
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${proto}//${window.location.host}`);
       wsRef.current = ws;
 
       ws.onopen = () => setWsConnected(true);

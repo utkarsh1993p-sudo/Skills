@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "jarvis/Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "node backend/src/server.js",
+    "healthcheckPath": "/api/weather?city=test",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}
