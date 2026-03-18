@@ -114,7 +114,7 @@
 }
 .chat-input::placeholder { color: var(--text-dim); }
 
-.voice-btn, .send-btn {
+.voice-btn, .send-btn, .hands-free-btn {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
@@ -129,12 +129,24 @@
   transition: all 0.2s;
   padding: 8px;
 }
-.voice-btn:hover:not(:disabled), .send-btn:hover:not(:disabled) {
+.voice-btn:hover:not(:disabled), .send-btn:hover:not(:disabled), .hands-free-btn:hover:not(:disabled) {
   background: rgba(0, 212, 255, 0.25);
   border-color: var(--primary);
   box-shadow: 0 0 12px var(--primary-glow);
 }
-.voice-btn:disabled, .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.voice-btn:disabled, .send-btn:disabled, .hands-free-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.hands-free-btn.active {
+  background: rgba(123, 47, 255, 0.2);
+  border-color: #7b2fff;
+  color: #7b2fff;
+  box-shadow: 0 0 16px rgba(123, 47, 255, 0.4);
+  animation: hf-glow 2s infinite;
+}
+@keyframes hf-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(123,47,255,0.3); }
+  50% { box-shadow: 0 0 22px rgba(123,47,255,0.6); }
+}
 
 .voice-btn.active {
   background: rgba(0, 255, 136, 0.2);

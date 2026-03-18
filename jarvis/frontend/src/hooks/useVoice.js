@@ -8,7 +8,16 @@ export default function useVoice() {
   const [transcript, setTranscript] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef(null);
+  const voicesRef = useRef([]);
   const synth = window.speechSynthesis;
+
+  // Chrome loads voices asynchronously — pre-load them
+  useEffect(() => {
+    const load = () => { voicesRef.current = synth.getVoices(); };
+    load();
+    synth.addEventListener('voiceschanged', load);
+    return () => synth.removeEventListener('voiceschanged', load);
+  }, []);
 
   const startListening = useCallback(() => {
     if (!supported) return;
@@ -45,29 +54,30 @@ export default function useVoice() {
 
     synth.cancel();
 
-    // Strip markdown-ish formatting
     const clean = text
       .replace(/[*_`#]/g, '')
       .replace(/\n+/g, '. ')
-      .slice(0, 600); // Cap at 600 chars for TTS
+      .slice(0, 600);
 
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 0.95;
-    utterance.pitch = 0.9;
-    utterance.volume = 1;
+    // Chrome bug: cancel() must settle before speak() works reliably
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.rate = 0.95;
+      utterance.pitch = 0.9;
+      utterance.volume = 1;
 
-    // Pick a deeper voice if available
-    const voices = synth.getVoices();
-    const preferred = voices.find(v =>
-      /google uk english male|daniel|alex|fred/i.test(v.name)
-    ) || voices.find(v => v.lang === 'en-GB') || voices[0];
-    if (preferred) utterance.voice = preferred;
+      const voices = voicesRef.current;
+      const preferred = voices.find(v =>
+        /google uk english male|daniel|alex|fred/i.test(v.name)
+      ) || voices.find(v => v.lang === 'en-GB') || voices[0];
+      if (preferred) utterance.voice = preferred;
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
 
-    synth.speak(utterance);
+      synth.speak(utterance);
+    }, 100);
   }, []);
 
   const cancelSpeech = useCallback(() => {
@@ -75,7 +85,6 @@ export default function useVoice() {
     setIsSpeaking(false);
   }, []);
 
-  // Reset transcript when it's consumed
   const consumeTranscript = useCallback(() => setTranscript(''), []);
 
   useEffect(() => {

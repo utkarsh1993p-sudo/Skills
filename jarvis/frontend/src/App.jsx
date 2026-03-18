@@ -24,11 +24,19 @@ export default function App() {
   const [whatsappQR, setWhatsappQR] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [activePanel, setActivePanel] = useState(null); // 'calendar' | 'whatsapp' | 'weather'
+  const [handsFreeMode, setHandsFreeMode] = useState(false);
 
   const wsRef = useRef(null);
   const inputRef = useRef(null);
+  const prevIsListeningRef = useRef(false);
+  const transcriptRef = useRef('');
 
-  const { isListening, transcript, startListening, stopListening, speak, isSpeaking, supported } = useVoice();
+  const { isListening, transcript, startListening, stopListening, speak, isSpeaking, supported, consumeTranscript } = useVoice();
+
+  // Keep a ref copy of transcript to avoid stale closures
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
 
   // WebSocket connection
   useEffect(() => {
@@ -64,10 +72,10 @@ export default function App() {
     return () => wsRef.current?.close();
   }, []);
 
-  // Voice transcript → input
+  // Voice transcript → input field (manual mode only)
   useEffect(() => {
-    if (transcript) setInput(transcript);
-  }, [transcript]);
+    if (!handsFreeMode && transcript) setInput(transcript);
+  }, [transcript, handsFreeMode]);
 
   // Orb state sync
   useEffect(() => {
@@ -157,12 +165,45 @@ export default function App() {
     }
   }, [input, isProcessing, speak, supported]);
 
+  // Hands-free: auto-send when recognition ends with a result
+  useEffect(() => {
+    const wasListening = prevIsListeningRef.current;
+    prevIsListeningRef.current = isListening;
+
+    if (handsFreeMode && wasListening && !isListening) {
+      const t = transcriptRef.current.trim();
+      if (t) {
+        sendMessage(t);
+        consumeTranscript();
+        setInput('');
+      }
+    }
+  }, [isListening, handsFreeMode, consumeTranscript, sendMessage]);
+
+  // Hands-free: auto-restart listening after Jarvis finishes speaking (or becomes idle)
+  useEffect(() => {
+    if (!handsFreeMode || isListening || isSpeaking || isProcessing) return;
+    const t = setTimeout(startListening, 600);
+    return () => clearTimeout(t);
+  }, [handsFreeMode, isListening, isSpeaking, isProcessing, startListening]);
+
+  // Turning hands-free OFF: stop any active listening
+  useEffect(() => {
+    if (!handsFreeMode && isListening) stopListening();
+  }, [handsFreeMode]);
+
   const handleVoiceToggle = () => {
-    if (isListening) {
-      stopListening();
-      if (transcript) sendMessage(transcript);
+    if (handsFreeMode) {
+      // In hands-free mode, mic button stops/starts a cycle manually
+      if (isListening) stopListening();
+      else startListening();
     } else {
-      startListening();
+      if (isListening) {
+        stopListening();
+        if (transcript) sendMessage(transcript);
+      } else {
+        startListening();
+      }
     }
   };
 
@@ -243,10 +284,19 @@ export default function App() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Speak or type a command, sir..."
+            placeholder={handsFreeMode ? 'Hands-free mode active — just speak...' : 'Speak or type a command, sir...'}
             rows={1}
             disabled={isProcessing}
           />
+
+          <button
+            className={`hands-free-btn ${handsFreeMode ? 'active' : ''}`}
+            onClick={() => setHandsFreeMode(v => !v)}
+            title={handsFreeMode ? 'Disable hands-free mode' : 'Enable hands-free mode (auto-listen)'}
+            disabled={!supported}
+          >
+            <HandsFreeIcon active={handsFreeMode} />
+          </button>
 
           <button
             className={`send-btn ${isProcessing ? 'processing' : ''}`}
@@ -256,7 +306,11 @@ export default function App() {
             <SendIcon processing={isProcessing} />
           </button>
         </div>
-        <div className="input-hint">ENTER to send · SHIFT+ENTER for newline</div>
+        <div className="input-hint">
+          {handsFreeMode
+            ? 'HANDS-FREE · Jarvis listens automatically after each reply'
+            : 'ENTER to send · SHIFT+ENTER for newline · Click mic icon for hands-free'}
+        </div>
       </div>
     </div>
   );
@@ -270,6 +324,17 @@ function MicIcon({ active }) {
       <line x1="12" y1="19" x2="12" y2="23"/>
       <line x1="8" y1="23" x2="16" y2="23"/>
       {active && <circle cx="12" cy="7" r="5" fill="currentColor" opacity="0.2" className="pulse-circle"/>}
+    </svg>
+  );
+}
+
+function HandsFreeIcon({ active }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="12" cy="11" rx="4" ry="5"/>
+      <path d="M3 11c0 4.97 4.03 9 9 9s9-4.03 9-9"/>
+      {active && <circle cx="12" cy="11" r="8" fill="currentColor" opacity="0.15"/>}
+      {active && <line x1="12" y1="20" x2="12" y2="23" strokeWidth="2.5"/>}
     </svg>
   );
 }
