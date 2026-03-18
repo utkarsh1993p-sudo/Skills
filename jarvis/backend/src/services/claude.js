@@ -141,7 +141,6 @@ async function* chat(userMessage) {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-6',
       max_tokens: 4096,
-      thinking: { type: 'adaptive' },
       system: SYSTEM_PROMPT,
       tools: TOOLS,
       messages: conversationHistory,

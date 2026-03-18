@@ -143,6 +143,10 @@ export default function App() {
                   ? { ...m, toolCalls: [...(m.toolCalls || []), { tool: event.tool, status: 'running' }] }
                   : m
               ));
+            } else if (event.type === 'error') {
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: `Error: ${event.error}`, streaming: false, error: true } : m
+              ));
             } else if (event.type === 'done') {
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, streaming: false } : m
