@@ -2,7 +2,7 @@
 FROM node:20-slim AS frontend-build
 WORKDIR /build
 COPY jarvis/frontend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY jarvis/frontend/ ./
 RUN npm run build
 
@@ -18,7 +18,7 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY jarvis/backend/package*.json ./
 
 # --omit=optional skips whatsapp-web.js (heavy Chromium dep) entirely
-RUN npm ci --omit=dev --omit=optional
+RUN npm install --omit=dev --omit=optional
 
 COPY jarvis/backend/ ./
 COPY --from=frontend-build /build/dist ./frontend/dist
