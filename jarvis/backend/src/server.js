@@ -170,7 +170,7 @@ server.listen(PORT, () => {
 ╔═══════════════════════════════════════════════╗
 ║  🤖 JARVIS Backend Online                     ║
 ║  Port: ${PORT}                                    ║
-║  Model: claude-opus-4-6                       ║
+║  Model: claude-sonnet-4-6                     ║
 ║  API Key: ${apiKeyStatus.padEnd(34)}║
 ╚═══════════════════════════════════════════════╝
   `);

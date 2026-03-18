@@ -151,7 +151,7 @@ async function* chat(userMessage) {
     let currentBlock = null; // { type, text?, id?, name?, inputJson? }
 
     const stream = client.messages.stream({
-      model: 'claude-opus-4-6',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools: TOOLS,
